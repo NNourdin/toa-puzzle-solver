@@ -81,6 +81,18 @@ public class ScarabPuzzleOverlay extends RoomOverlay {
                 }
             }
         }
+
+        if(config.lightPuzzle())
+        {
+            for (Tile tile : scarabPuzzle.getLightPuzzleTiles().keySet())
+            {
+                int tile_index = scarabPuzzle.getLightPuzzleTiles().get(tile);
+
+                if(ScarabPuzzle.lightPuzzleSolution[tile_index] == 1) {
+                    drawTile(graphics, tile.getWorldLocation(), config.scarabPuzzleTileMarkerColor(), 1, 255, 10);
+                }
+            }
+        }
         return null;
     }
 }

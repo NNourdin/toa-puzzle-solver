@@ -22,3 +22,12 @@ I stripped this plugin from alot of other features like prayer indicators etc, m
 2. The desired path will be marked
 
 ![number-puzzle](https://i.imgur.com/SAuciwx.png)
+
+## Light puzzle
+
+1. Step on the marked tiles in any order
+
+![light-puzzle](https://i.imgur.com/8VAOXpN.png)
+
+Solution to solve this algebraic problem: [https://mathworld.wolfram.com/LightsOutPuzzle.html](https://mathworld.wolfram.com/LightsOutPuzzle.html)
+

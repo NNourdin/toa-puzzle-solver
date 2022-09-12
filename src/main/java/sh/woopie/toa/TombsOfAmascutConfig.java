@@ -54,6 +54,18 @@ public interface TombsOfAmascutConfig extends Config
 	}
 
 	@ConfigItem(
+			position = 3,
+			keyName = "lightPuzzle",
+			name = "Solve Light Puzzle",
+			description = "Solve the light puzzle.",
+			section = SCARAB_PUZZLE_SECTION
+	)
+	default boolean lightPuzzle()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 			name = "Tile Marker Color",
 			keyName = "scarabPuzzleTileMarkerColor",
 			description = "Set the color of the highlight overlay",

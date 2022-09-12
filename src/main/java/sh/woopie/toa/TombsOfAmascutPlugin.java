@@ -1,5 +1,6 @@
 package sh.woopie.toa;
 
+import net.runelite.api.events.GameTick;
 import sh.woopie.toa.ScarabPuzzle.ScarabPuzzle;
 
 import net.runelite.api.Client;
@@ -81,6 +82,9 @@ public class TombsOfAmascutPlugin extends Plugin
 	{
 		scarabPuzzle.onChatMessage(event);
 	}
+
+	@Subscribe
+	public void onGameTick(GameTick event) { scarabPuzzle.onGameTick(event); }
 
 
 	@Provides
