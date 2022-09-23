@@ -1,5 +1,12 @@
 package sh.woopie.toa;
 
+import javax.inject.Inject;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import javax.annotation.Nonnull;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.Perspective;
@@ -13,14 +20,6 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.ui.FontManager;
 import static net.runelite.api.Constants.TILE_FLAG_BRIDGE;
-
-import javax.inject.Inject;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.Polygon;
-import javax.annotation.Nonnull;
 
 public abstract class RoomOverlay extends Overlay
 {
@@ -36,6 +35,21 @@ public abstract class RoomOverlay extends Overlay
         setPriority(OverlayPriority.HIGH);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }
+
+	protected void drawTileWithText(Graphics2D graphics, WorldPoint point, String text, Color color, int strokeWidth, int outlineAlpha, int fillAlpha)
+	{
+		LocalPoint lp = LocalPoint.fromWorld(client, point);
+
+		if(lp == null)
+		{
+			return;
+		}
+
+		Point canvasPoint = Perspective.getCanvasTextLocation(client, graphics, lp, text, 0);
+
+		drawTile(graphics, point, color, strokeWidth, outlineAlpha, fillAlpha);
+		renderTextLocation(graphics, text, Color.WHITE, canvasPoint);
+	}
 
     protected void drawTile(Graphics2D graphics, WorldPoint point, Color color, int strokeWidth, int outlineAlpha, int fillAlpha)
     {

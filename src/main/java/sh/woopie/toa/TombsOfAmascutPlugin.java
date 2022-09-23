@@ -1,9 +1,10 @@
 package sh.woopie.toa;
 
-import net.runelite.api.events.GameTick;
-import sh.woopie.toa.ScarabPuzzle.ScarabPuzzle;
-
+import com.google.inject.Provides;
+import lombok.extern.slf4j.Slf4j;
+import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.events.NpcChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -12,14 +13,12 @@ import net.runelite.api.events.GroundObjectSpawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.ui.overlay.OverlayManager;
-
-import com.google.inject.Provides;
-import lombok.extern.slf4j.Slf4j;
-import javax.inject.Inject;
+import net.runelite.api.events.GameTick;
+import sh.woopie.toa.ScarabPuzzle.ScarabPuzzle;
 
 @Slf4j
 @PluginDescriptor(
-		name = "Tombs of Amascut"
+		name = "TOA Puzzle Solver"
 )
 public class TombsOfAmascutPlugin extends Plugin
 {
@@ -80,11 +79,19 @@ public class TombsOfAmascutPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
+		if(event.getMessage().contains("You enter the Tombs of Amascut"))
+		{
+			scarabPuzzle.clear(false);
+		}
+
 		scarabPuzzle.onChatMessage(event);
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick event) { scarabPuzzle.onGameTick(event); }
+
+	@Subscribe
+	public void onNpcChanged(NpcChanged event) { scarabPuzzle.onNpcChanged(event); }
 
 
 	@Provides

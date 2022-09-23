@@ -13,7 +13,7 @@ public interface TombsOfAmascutConfig extends Config
 			name = "Scarab Puzzle",
 			description = "Helpers for the Scarab puzzle room",
 			position = 0,
-			closedByDefault = true
+			closedByDefault = false
 	)
 	String SCARAB_PUZZLE_SECTION = "scarabPuzzleSection";
 
@@ -61,6 +61,18 @@ public interface TombsOfAmascutConfig extends Config
 			section = SCARAB_PUZZLE_SECTION
 	)
 	default boolean lightPuzzle()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 4,
+		keyName = "obeliskPuzzle",
+		name = "Solve Obelisk Puzzle",
+		description = "Remember obelisk order.",
+		section = SCARAB_PUZZLE_SECTION
+	)
+	default boolean obeliskPuzzle()
 	{
 		return true;
 	}

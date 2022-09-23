@@ -1,19 +1,7 @@
 package sh.woopie.toa.ScarabPuzzle;
 
-import net.runelite.api.hooks.Callbacks;
-import sh.woopie.toa.TombsOfAmascutPlugin;
-import sh.woopie.toa.TombsOfAmascutConfig;
-import sh.woopie.toa.Room;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.hooks.DrawCallbacks;
-import net.runelite.api.events.*;
-import net.runelite.client.eventbus.Subscribe;
-import static net.runelite.api.ChatMessageType.GAMEMESSAGE;
-
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,14 +11,17 @@ import java.util.Map;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.*;
+import net.runelite.client.eventbus.Subscribe;
+import static net.runelite.api.ChatMessageType.GAMEMESSAGE;
+import sh.woopie.toa.TombsOfAmascutPlugin;
+import sh.woopie.toa.TombsOfAmascutConfig;
+import sh.woopie.toa.ScarabPuzzle.LightPuzzle.LightPuzzleState;
+import sh.woopie.toa.ScarabPuzzle.LightPuzzle.LightPuzzleSolver;
+import sh.woopie.toa.Room;
 
-import org.apache.commons.math3.fraction.Fraction;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.DecompositionSolver;
-import org.apache.commons.math3.linear.LUDecomposition;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.ArrayRealVector;
 
 @Slf4j
 public class ScarabPuzzle extends Room {
@@ -45,46 +36,33 @@ public class ScarabPuzzle extends Room {
         super(plugin, config);
     }
 
-    private int rememberPathSize = 1;
-    private int puzzleHint = 0;
+	public static final int SCARAB_PUZZLE_REGION = 14162;
+	public static final int SHINING_OBELISK = 11699;
 
-    public static final long[] denominatorList = {0, 0, 0, 0, 0, 0, 0, 0};
-    public static final double[] tileStates = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    public static final double[] lightPuzzleSolution = {0, 0, 0, 0, 0, 0, 0, 0};
-
-    // Light puzzle matrix
-    public static final double[][] coeffMatrix = {
-            {1, 1, 0, 1, 0, 0, 0, 0}, // a11
-            {1, 1, 1, 0, 0, 0, 0, 0}, // a12
-            {0, 1, 1, 0, 1, 0, 0, 0}, // a13
-            {1, 0, 0, 1, 0, 1, 0, 0}, // a21
-            {0, 0, 1, 0, 1, 0, 0, 1}, // a23
-            {0, 0, 0, 1, 0, 1, 1, 0}, // a31
-            {0, 0, 0, 0, 0, 1, 1, 1}, // a32
-            {0, 0, 0, 0, 1, 0, 1, 1}  // a33
-    };
+    public static double[] lightPuzzleSolution = {0, 0, 0, 0, 0, 0, 0, 0};
 
     // Start location of the light puzzle, Scene XY
-    public static final int[][] lightPuzzleOffsets = {
+    private static final int[][] lightPuzzleOffsets = {
             {40, 44}, // right_bottom
             {40, 56}, // left_bottom
             {57, 44}, // right_top
             {57, 56}, // left_top
     };
 
-    public static final Integer SCARAB_PUZZLE_REGION = 14162;
+    @Getter
+    private final List<Integer> numberPuzzleSolution = new ArrayList<>();
 
     @Getter
-    private final Hashtable<WorldPoint, Integer> puzzleRememberPath = new Hashtable<WorldPoint, Integer>();
+    private final Hashtable<WorldPoint, String> puzzleMemorySolution = new Hashtable<WorldPoint, String>();
+
+	@Getter
+	private final List<WorldPoint> sequencePuzzleSolution = new ArrayList<>();
+
+	@Getter
+	private final List<WorldPoint> obelisks = new ArrayList<>();
 
     @Getter
-    private final List<Integer> puzzlePath = new ArrayList<>();
-
-    @Getter
-    private final Hashtable<WorldPoint, String> puzzleMemory = new Hashtable<WorldPoint, String>();
-
-    @Getter
-    private final Map<Integer, WorldPoint> puzzleTiles = new HashMap<>();
+    private final Map<Integer, WorldPoint> numberPuzzleTiles = new HashMap<>();
 
     @Getter
     private final Map<Tile, Integer> lightPuzzleTiles = new HashMap<>();
@@ -96,30 +74,54 @@ public class ScarabPuzzle extends Room {
 
     @Override
     public void unload() {
-        rememberPathSize = 1;
-        puzzlePath.clear();
-        puzzleMemory.clear();
-        puzzleRememberPath.clear();
+        puzzleMemorySolution.clear();
+		numberPuzzleSolution.clear();
+		sequencePuzzleSolution.clear();
         lightPuzzleTiles.clear();
+		numberPuzzleTiles.clear();
+		obelisks.clear();
         overlayManager.remove(scarabPuzzleOverlay);
     }
 
     @Subscribe
     public void onGameTick(GameTick event)
     {
-        if(inRoomRegion(SCARAB_PUZZLE_REGION)) {
-            defineLightPuzzleLocation();
-            setLightPuzzleTileStates();
-            solveLightPuzzle();
-        } else {
-            rememberPathSize = 1;
-            puzzlePath.clear();
-            puzzleMemory.clear();
-            puzzleRememberPath.clear();
-            lightPuzzleTiles.clear();
-            puzzleTiles.clear();
-        }
+		if(!inRoomRegion(SCARAB_PUZZLE_REGION))
+		{
+			return;
+		}
+
+		defineLightPuzzleLocation();
+
+		LightPuzzleState lightPuzzleState = new LightPuzzleState();
+		LightPuzzleSolver lightPuzzleSolver = new LightPuzzleSolver();
+
+		lightPuzzleState.updateState(lightPuzzleTiles);
+		lightPuzzleSolution = lightPuzzleSolver.solve(lightPuzzleState.getState());
     }
+
+	@Subscribe
+	public void onNpcChanged(NpcChanged event)
+	{
+		if (event.getNpc().getId() == SHINING_OBELISK)
+		{
+			boolean onRecord = false;
+
+			for(WorldPoint point : obelisks)
+			{
+				if(point.equals(event.getNpc().getWorldLocation()))
+				{
+					onRecord = true;
+					break;
+				}
+			}
+
+			if(!onRecord)
+			{
+				obelisks.add(event.getNpc().getWorldLocation());
+			}
+		}
+	}
 
     @Subscribe
     public void onGroundObjectSpawned(GroundObjectSpawned event)
@@ -130,160 +132,109 @@ public class ScarabPuzzle extends Room {
         {
             // Reveal memory puzzle
             case 45356:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Line");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Line");
                 break;
             case 45357:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Knives");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Knives");
                 break;
             case 45358:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Hook");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Hook");
                 break;
             case 45359:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Diamond");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Diamond");
                 break;
             case 45360:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Hand");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Hand");
                 break;
             case 45361:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Star");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Star");
                 break;
             case 45362:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Bird");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Bird");
                 break;
             case 45363:
-                puzzleMemory.put(groundObject.getWorldLocation(), "W");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "W");
                 break;
             case 45364:
-                puzzleMemory.put(groundObject.getWorldLocation(), "Boots");
+                puzzleMemorySolution.put(groundObject.getWorldLocation(), "Boots");
                 break;
         }
     }
 
     @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event)
-    {
-        final GameObject gameObject = event.getGameObject();
+	{
+		final GameObject gameObject = event.getGameObject();
+		int objectId = gameObject.getId();
 
-        switch(gameObject.getId()) {
-            case ObjectID.PRESSURE_PLATE_45341:
-                // Clear the puzzle
-                if(rememberPathSize == 6)
-                {
-                    rememberPathSize = 1;
-                    puzzleRememberPath.clear();
-                }
+		if (objectId == ObjectID.PRESSURE_PLATE_45341)
+		{
+			if (sequencePuzzleSolution.size() == 5)
+			{
+				sequencePuzzleSolution.clear();
+			}
+			sequencePuzzleSolution.add(gameObject.getWorldLocation());
+		}
 
-                puzzleRememberPath.put(gameObject.getWorldLocation(), rememberPathSize);
-                rememberPathSize++;
-                break;
-            case ObjectID.ANCIENT_TABLET:
-                if(puzzleTiles.isEmpty())
-                {
-                    if(gameObject.getWorldLocation().equals(WorldPoint.fromScene(client,51, 44, 0))) {
-                        defineNumberPuzzleTiles(53,44); // top right
-                    } else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client,51, 56, 0))) {
-                        defineNumberPuzzleTiles(53,56); // top left
-                    } else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client,34, 44, 0))) {
-                        defineNumberPuzzleTiles(36,44); // bottom right
-                    } else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client,34, 56, 0))) {
-                        defineNumberPuzzleTiles(36,56); // bottom left
-                    }
-                }
-                break;
-        }
-    }
+		if (objectId == ObjectID.ANCIENT_TABLET)
+		{
+			if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client, 51, 44, 0)))
+			{
+				defineNumberPuzzleTiles(53, 44); // top right
+			}
+			else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client, 51, 56, 0)))
+			{
+				defineNumberPuzzleTiles(53, 56); // top left
+			}
+			else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client, 34, 44, 0)))
+			{
+				defineNumberPuzzleTiles(36, 44); // bottom right
+			}
+			else if (gameObject.getWorldLocation().equals(WorldPoint.fromScene(client, 34, 56, 0)))
+			{
+				defineNumberPuzzleTiles(36, 56); // bottom left
+			}
+		}
+	}
 
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage)
     {
-        if(!inRoomRegion(SCARAB_PUZZLE_REGION))
+        if(!inRoomRegion(SCARAB_PUZZLE_REGION) || chatMessage.getType() != GAMEMESSAGE)
         {
             return;
         }
 
-        if(chatMessage.getType() == GAMEMESSAGE && chatMessage.getMessage().contains("The number")) {
+        if(chatMessage.getMessage().contains("The number")) {
             Pattern pattern = Pattern.compile("(?<=>)(.*)(?=<)");
             Matcher matcher = pattern.matcher(chatMessage.getMessage());
 
             if(matcher.find()) {
-                puzzleHint = Integer.parseInt(matcher.group(1));
+                int puzzleHint = Integer.parseInt(matcher.group(1));
+				createNumberPuzzleSolution(puzzleHint);
             }
-
-            createPuzzlePath(puzzleHint);
         }
+
+		if(chatMessage.getMessage().contains("completed!")) {
+			clear(true);
+		}
     }
 
-    public void solveLightPuzzle()
+	public void defineLightPuzzleLocation()
     {
-        RealMatrix coefficients = new Array2DRowRealMatrix(coeffMatrix, false);
-        DecompositionSolver solver = new LUDecomposition(coefficients).getSolver();
-
-        RealVector constants = new ArrayRealVector(tileStates, false);
-        RealVector solved = solver.solve((constants));
-
-        double[] solution = solved.toArray();
-
-        for(int i = 0; i < solution.length; i++) {
-            denominatorList[i] = new Fraction(solution[i]).getDenominator();
-        }
-
-        // Get the greatest common divisor from all denominators
-        long gcd = gcdArr(denominatorList);
-
-        // Rebuild our solution and determine which tiles need to be flipped, odd ones.
-        for(int i = 0; i < solution.length; i++)
-        {
-            lightPuzzleSolution[i] = Math.rint(solution[i] * gcd % 2);
-            lightPuzzleSolution[i] = Math.abs(lightPuzzleSolution[i]);
-        }
-    }
-
-    public void defineLightPuzzleLocation()
-    {
-        if(!lightPuzzleTiles.isEmpty())
-        {
-            return;
-        }
-
         final Scene scene = client.getScene();
         Tile[][][] sceneTiles = scene.getTiles();
 
-        for(int i = 0; i < lightPuzzleOffsets.length; i++) {
-            int x = lightPuzzleOffsets[i][0];
-            int y = lightPuzzleOffsets[i][1];
+		for (int[] lightPuzzleOffset : lightPuzzleOffsets)
+		{
+			int x = lightPuzzleOffset[0];
+			int y = lightPuzzleOffset[1];
 
-            if(sceneTiles[0][x][y].getGroundObject().getId() == 45344) {
-                defineLightPuzzleTiles(sceneTiles, x, y);
-            }
-        }
-    }
-
-    public void setLightPuzzleTileStates()
-    {
-        for(Tile tile : lightPuzzleTiles.keySet())
-        {
-            boolean light_found = false;
-
-            for(GameObject gameObject : tile.getGameObjects())
-            {
-                if(gameObject != null)
-                {
-                    if(gameObject.getId() == 45384)
-                    {
-                        tileStates[lightPuzzleTiles.get(tile)] = 0;
-                        light_found = true;
-                    } else if(gameObject.getId() == 29733) {
-                        tileStates[lightPuzzleTiles.get(tile)] = 1;
-                        light_found = true;
-                    }
-                }
-            }
-            // We need to do this here, since light_off GameObject only spawns on tile event
-            if(!light_found)
-            {
-                tileStates[lightPuzzleTiles.get(tile)] = 1;
-            }
-        }
+			if (sceneTiles[0][x][y].getGroundObject().getId() == ObjectID.PRESSURE_PLATE_45344)
+			{
+				defineLightPuzzleTiles(sceneTiles, x, y);
+			}
+		}
     }
 
     public void defineNumberPuzzleTiles(int x, int y)
@@ -294,7 +245,7 @@ public class ScarabPuzzle extends Room {
         {
             for (int n = 0; n < 5; n++)
             {
-                puzzleTiles.put(tile_index, WorldPoint.fromScene(client, (x + i), (y - n),0));
+				numberPuzzleTiles.put(tile_index, WorldPoint.fromScene(client, (x + i), (y - n),0));
                 tile_index++;
             }
         }
@@ -321,149 +272,113 @@ public class ScarabPuzzle extends Room {
         }
     }
 
-    public void createPuzzlePath(int puzzleHint)
+	public void clear(boolean onlySolutions)
+	{
+		numberPuzzleSolution.clear();
+		sequencePuzzleSolution.clear();
+		obelisks.clear();
+
+		if(!onlySolutions)
+		{
+			lightPuzzleTiles.clear();
+			numberPuzzleTiles.clear();
+			puzzleMemorySolution.clear();
+		}
+	}
+
+    public void createNumberPuzzleSolution(int puzzleHint)
     {
         switch(puzzleHint) {
-            case 10:
-                Collections.addAll(puzzlePath, 5, 10);
-                break;
-            case 11:
-                Collections.addAll(puzzlePath, 4, 9, 13);
-                break;
-            case 12:
-                Collections.addAll(puzzlePath, 1, 6);
-                break;
-            case 13:
-                Collections.addAll(puzzlePath, 2, 7);
-                break;
-            case 14:
-                Collections.addAll(puzzlePath, 3, 8);
-                break;
-            case 15:
-                Collections.addAll(puzzlePath, 4, 9, 14);
-                break;
-            case 16:
-                Collections.addAll(puzzlePath, 4, 8, 12);
-                break;
-            case 17:
-                Collections.addAll(puzzlePath, 3, 8, 13);
-                break;
-            case 18:
-                Collections.addAll(puzzlePath, 2, 7, 12, 17);
-                break;
-            case 19:
-                Collections.addAll(puzzlePath, 2, 7, 12, 17, 22);
-                break;
             case 20:
-                Collections.addAll(puzzlePath, 2, 8, 14);
+                Collections.addAll(numberPuzzleSolution, 2, 8, 14);
                 break;
             case 21:
-                Collections.addAll(puzzlePath, 4, 9, 14, 19, 24);
+                Collections.addAll(numberPuzzleSolution, 4, 9, 14, 19, 24);
                 break;
             case 22:
-                Collections.addAll(puzzlePath, 5, 10, 15, 20, 25);
+                Collections.addAll(numberPuzzleSolution, 5, 10, 15, 20, 25);
                 break;
             case 23:
-                Collections.addAll(puzzlePath, 1, 7, 13, 19, 25);
+                Collections.addAll(numberPuzzleSolution, 1, 7, 13, 19, 25);
                 break;
             case 24:
-                Collections.addAll(puzzlePath, 2, 8, 14, 20);
+                Collections.addAll(numberPuzzleSolution, 2, 8, 14, 20);
                 break;
             case 25:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18);
                 break;
             case 26:
-                Collections.addAll(puzzlePath, 5, 10, 15, 20, 25, 24);
+                Collections.addAll(numberPuzzleSolution, 5, 10, 15, 20, 25, 24);
                 break;
             case 27:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 19);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 19);
                 break;
             case 28:
-                Collections.addAll(puzzlePath, 2, 7, 12, 17, 22, 21);
+                Collections.addAll(numberPuzzleSolution, 2, 7, 12, 17, 22, 21);
                 break;
             case 29:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 24);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 24);
                 break;
             case 30:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 23);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 23);
                 break;
             case 31:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5);
                 break;
             case 32:
-                Collections.addAll(puzzlePath, 5, 10, 15, 20, 25, 24, 23, 22);
+                Collections.addAll(numberPuzzleSolution, 5, 10, 15, 20, 25, 24, 23, 22);
                 break;
             case 33:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 9);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 9);
                 break;
             case 34:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 23, 24);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 23, 24);
                 break;
             case 35:
-                Collections.addAll(puzzlePath, 1, 6, 7, 8, 9, 10);
+                Collections.addAll(numberPuzzleSolution, 1, 6, 7, 8, 9, 10);
                 break;
             case 36:
-                Collections.addAll(puzzlePath, 1, 6, 11, 16, 21, 22, 23);
+                Collections.addAll(numberPuzzleSolution, 1, 6, 11, 16, 21, 22, 23);
                 break;
             case 37:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 23, 24, 25);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 23, 24, 25);
                 break;
             case 38:
-                Collections.addAll(puzzlePath, 3, 8, 13, 18, 23, 17, 11);
+                Collections.addAll(numberPuzzleSolution, 3, 8, 13, 18, 23, 17, 11);
                 break;
             case 39:
-                Collections.addAll(puzzlePath, 1, 6, 11, 16, 21, 22, 18);
+                Collections.addAll(numberPuzzleSolution, 1, 6, 11, 16, 21, 22, 18);
                 break;
             case 40:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 10);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 10);
                 break;
             case 41:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 6, 11);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 6, 11);
                 break;
             case 42:
-                Collections.addAll(puzzlePath, 1, 5, 7, 10, 13, 15, 19, 20, 25);
+                Collections.addAll(numberPuzzleSolution, 1, 5, 7, 10, 13, 15, 19, 20, 25);
                 break;
             case 43:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 6, 11, 16);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 6, 11, 16);
                 break;
             case 44:
-                Collections.addAll(puzzlePath, 6, 7, 8, 9, 10, 11, 16, 21);
+                Collections.addAll(numberPuzzleSolution, 6, 7, 8, 9, 10, 11, 16, 21);
                 break;
             case 45:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 9, 14, 19, 24);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 9, 14, 19, 24);
                 break;
             case 46:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 9, 13, 17, 21);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 9, 13, 17, 21);
                 break;
             case 47:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 10, 14);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 10, 14);
                 break;
             case 48:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 10, 15, 20);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 10, 15, 20);
                 break;
             case 49:
-                Collections.addAll(puzzlePath, 1, 2, 3, 4, 5, 10, 15, 20);
+                Collections.addAll(numberPuzzleSolution, 1, 2, 3, 4, 5, 10, 15, 20);
                 break;
         }
-    }
-    static long gcdArr(long[] arr)
-    {
-        long result = arr[0];
-
-        for (int i = 1; i < arr.length; i++)
-        {
-            result = gcd(arr[i], result);
-        }
-
-        return result;
-    }
-
-    static long gcd(long a, long b)
-    {
-        if (a == 0)
-        {
-            return b;
-        }
-        return gcd(b % a, a);
     }
 }

@@ -1,7 +1,6 @@
 # Tombs of Amascut
 
-Tombs of Amascut (raids 3) puzzle solver for the scarab path.
-I stripped this plugin from alot of other features like prayer indicators etc, might decide to release these later.
+Tombs of Amascut (raids 3) puzzle solver for all 5 puzzles in scarab puzzle room.
 
 ## Memory puzzle
 
@@ -12,7 +11,7 @@ I stripped this plugin from alot of other features like prayer indicators etc, m
 ## Sequence puzzle
 
 1. Click on ancient button
-2. Wait for presure plates to light up and get marked
+2. Wait for pressure plates to light up and get marked
 
 ![sequence-puzzle](https://i.imgur.com/bltmlg0.png)
 
@@ -30,4 +29,11 @@ I stripped this plugin from alot of other features like prayer indicators etc, m
 ![light-puzzle](https://i.imgur.com/8VAOXpN.png)
 
 Solution to solve this algebraic problem: [https://mathworld.wolfram.com/LightsOutPuzzle.html](https://mathworld.wolfram.com/LightsOutPuzzle.html)
+
+## Obelisk puzzle
+
+![obelisk-puzzle](https://i.imgur.com/RxBlNu0.png)
+
+1. Hit the obelisks
+2. Correct order will be marked
 
