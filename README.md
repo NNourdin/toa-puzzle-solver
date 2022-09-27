@@ -32,8 +32,8 @@ Solution to solve this algebraic problem: [https://mathworld.wolfram.com/LightsO
 
 ## Obelisk puzzle
 
-![obelisk-puzzle](https://i.imgur.com/RxBlNu0.png)
-
 1. Hit the obelisks
 2. Correct order will be marked
+
+![obelisk-puzzle](https://i.imgur.com/RxBlNu0.png)
 
