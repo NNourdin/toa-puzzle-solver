@@ -10,19 +10,19 @@ import java.awt.Color;
 public interface TombsOfAmascutConfig extends Config
 {
 	@ConfigSection(
-			name = "Scarab Puzzle",
-			description = "Helpers for the Scarab puzzle room",
-			position = 0,
-			closedByDefault = false
+		name = "Scarab Puzzle",
+		description = "Helpers for the Scarab puzzle room",
+		position = 0,
+		closedByDefault = false
 	)
 	String SCARAB_PUZZLE_SECTION = "scarabPuzzleSection";
 
 	@ConfigItem(
-			position = 0,
-			keyName = "sequencePuzzle",
-			name = "Solve Sequence Puzzle",
-			description = "Solve the memory flip puzzle.",
-			section = SCARAB_PUZZLE_SECTION
+		position = 0,
+		keyName = "sequencePuzzle",
+		name = "Solve Sequence Puzzle",
+		description = "Solve the memory flip puzzle.",
+		section = SCARAB_PUZZLE_SECTION
 	)
 	default boolean sequencePuzzle()
 	{
@@ -30,11 +30,11 @@ public interface TombsOfAmascutConfig extends Config
 	}
 
 	@ConfigItem(
-			position = 1,
-			keyName = "countPuzzle",
-			name = "Solve Number Puzzle",
-			description = "Solve the number counting puzzle.",
-			section = SCARAB_PUZZLE_SECTION
+		position = 1,
+		keyName = "countPuzzle",
+		name = "Solve Number Puzzle",
+		description = "Solve the number counting puzzle.",
+		section = SCARAB_PUZZLE_SECTION
 	)
 	default boolean numberPuzzle()
 	{
@@ -42,11 +42,11 @@ public interface TombsOfAmascutConfig extends Config
 	}
 
 	@ConfigItem(
-			position = 2,
-			keyName = "memoryPuzzle",
-			name = "Solve Memory Puzzle",
-			description = "Solve the memory flip puzzle.",
-			section = SCARAB_PUZZLE_SECTION
+		position = 2,
+		keyName = "memoryPuzzle",
+		name = "Solve Memory Puzzle",
+		description = "Solve the memory flip puzzle.",
+		section = SCARAB_PUZZLE_SECTION
 	)
 	default boolean memoryPuzzle()
 	{
@@ -54,11 +54,11 @@ public interface TombsOfAmascutConfig extends Config
 	}
 
 	@ConfigItem(
-			position = 3,
-			keyName = "lightPuzzle",
-			name = "Solve Light Puzzle",
-			description = "Solve the light puzzle.",
-			section = SCARAB_PUZZLE_SECTION
+		position = 3,
+		keyName = "lightPuzzle",
+		name = "Solve Light Puzzle",
+		description = "Solve the light puzzle.",
+		section = SCARAB_PUZZLE_SECTION
 	)
 	default boolean lightPuzzle()
 	{
@@ -78,14 +78,14 @@ public interface TombsOfAmascutConfig extends Config
 	}
 
 	@ConfigItem(
-			name = "Tile Marker Color",
-			keyName = "scarabPuzzleTileMarkerColor",
-			description = "Set the color of the highlight overlay",
-			position = 6,
-			section = SCARAB_PUZZLE_SECTION
+		name = "Tile Marker Color",
+		keyName = "scarabPuzzleTileMarkerColor",
+		description = "Set the color of the highlight overlay",
+		position = 6,
+		section = SCARAB_PUZZLE_SECTION
 	)
 	default Color scarabPuzzleTileMarkerColor()
 	{
-		return new Color(255,0,115);
+		return new Color(255, 0, 115);
 	}
 }

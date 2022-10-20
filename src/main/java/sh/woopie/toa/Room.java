@@ -11,36 +11,36 @@ import javax.inject.Singleton;
 @Singleton
 public abstract class Room
 {
-    protected final TombsOfAmascutPlugin plugin;
-    protected final TombsOfAmascutConfig config;
+	protected final TombsOfAmascutPlugin plugin;
+	protected final TombsOfAmascutConfig config;
 
-    @Inject
-    protected OverlayManager overlayManager;
+	@Inject
+	protected OverlayManager overlayManager;
 
-    @Inject
-    private Client client;
+	@Inject
+	private Client client;
 
-    @Inject
-    protected Room(TombsOfAmascutPlugin plugin, TombsOfAmascutConfig config)
-    {
-        this.plugin = plugin;
-        this.config = config;
-    }
+	@Inject
+	protected Room(TombsOfAmascutPlugin plugin, TombsOfAmascutConfig config)
+	{
+		this.plugin = plugin;
+		this.config = config;
+	}
 
-    public void init()
-    {
-    }
+	public void init()
+	{
+	}
 
-    public void load()
-    {
-    }
+	public void load()
+	{
+	}
 
-    public void unload()
-    {
-    }
+	public void unload()
+	{
+	}
 
-    public boolean inRoomRegion(Integer roomRegionId)
-    {
-        return ArrayUtils.contains(client.getMapRegions(), roomRegionId);
-    }
+	public boolean inRoomRegion(Integer roomRegionId)
+	{
+		return ArrayUtils.contains(client.getMapRegions(), roomRegionId);
+	}
 }

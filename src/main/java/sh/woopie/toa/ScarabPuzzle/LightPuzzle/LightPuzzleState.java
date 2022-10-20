@@ -6,7 +6,7 @@ import net.runelite.api.Tile;
 
 public class LightPuzzleState
 {
-	private final double[] state = new double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+	private final double[] state = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 	private static final int TILE_LIGHT_ON = 45384;
 
 	public double[] getState()
@@ -14,21 +14,23 @@ public class LightPuzzleState
 		return state;
 	}
 
-	public void updateState(Map <Tile, Integer> tiles)
+	public void updateState(Map<Tile, Integer> tiles)
 	{
-		for(Tile tile : tiles.keySet())
+		for (Tile tile : tiles.keySet())
 		{
-			for(GameObject gameObject : tile.getGameObjects())
+			for (GameObject gameObject : tile.getGameObjects())
 			{
-				if(gameObject == null)
+				if (gameObject == null)
 				{
 					continue;
 				}
 
-				if(gameObject.getId() == TILE_LIGHT_ON)
+				if (gameObject.getId() == TILE_LIGHT_ON)
 				{
 					state[tiles.get(tile)] = 0;
-				} else {
+				}
+				else
+				{
 					state[tiles.get(tile)] = 1;
 				}
 			}

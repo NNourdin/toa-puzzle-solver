@@ -18,7 +18,7 @@ import sh.woopie.toa.ScarabPuzzle.ScarabPuzzle;
 
 @Slf4j
 @PluginDescriptor(
-		name = "TOA Puzzle Solver"
+	name = "TOA Puzzle Solver"
 )
 public class TombsOfAmascutPlugin extends Plugin
 {
@@ -41,7 +41,7 @@ public class TombsOfAmascutPlugin extends Plugin
 	{
 		if (rooms == null)
 		{
-			rooms = new Room[] { scarabPuzzle };
+			rooms = new Room[]{scarabPuzzle};
 
 			for (Room room : rooms)
 			{
@@ -79,7 +79,7 @@ public class TombsOfAmascutPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if(event.getMessage().contains("You enter the Tombs of Amascut"))
+		if (event.getMessage().contains("You enter the Tombs of Amascut"))
 		{
 			scarabPuzzle.clear(false);
 		}
@@ -88,10 +88,16 @@ public class TombsOfAmascutPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event) { scarabPuzzle.onGameTick(event); }
+	public void onGameTick(GameTick event)
+	{
+		scarabPuzzle.onGameTick(event);
+	}
 
 	@Subscribe
-	public void onNpcChanged(NpcChanged event) { scarabPuzzle.onNpcChanged(event); }
+	public void onNpcChanged(NpcChanged event)
+	{
+		scarabPuzzle.onNpcChanged(event);
+	}
 
 
 	@Provides

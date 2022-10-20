@@ -33,7 +33,8 @@ public class LightPuzzleSolver
 
 		double[] solution = solved.toArray();
 
-		for(int i = 0; i < solution.length; i++) {
+		for (int i = 0; i < solution.length; i++)
+		{
 			denominators[i] = new Fraction(solution[i]).getDenominator();
 		}
 
@@ -41,7 +42,7 @@ public class LightPuzzleSolver
 		long gcd = gcdArr();
 
 		// Rebuild our solution and determine which tiles need to be flipped, odd ones.
-		for(int i = 0; i < solution.length; i++)
+		for (int i = 0; i < solution.length; i++)
 		{
 			solution[i] = Math.rint(solution[i] * gcd % 2);
 			solution[i] = Math.abs(solution[i]);
